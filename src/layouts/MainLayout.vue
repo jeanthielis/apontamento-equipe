@@ -32,9 +32,31 @@
           </router-link>
           
           <router-link to="/unidades" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
-  <i class="fa-solid fa-users-gear w-7 text-lg group-hover:scale-110 transition-transform"></i>
-  <span class="text-sm">Estrutura e Liderança</span>
-</router-link>
+            <i class="fa-solid fa-users-gear w-7 text-lg group-hover:scale-110 transition-transform"></i>
+            <span class="text-sm">Estrutura e Liderança</span>
+        </router-link>
+
+          <router-link to="/funcionarios" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+            <i class="fa-solid fa-address-card w-7 text-lg group-hover:scale-110 transition-transform"></i>
+            <span class="text-sm">Efetivo & Operadores</span>
+          </router-link>
+
+          <router-link to="/biblioteca-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+            <i class="fa-solid fa-book-medical w-7 text-lg group-hover:scale-110 transition-transform"></i>
+            <span class="text-sm">Biblioteca de DDS</span>
+          </router-link>
+          <router-link to="/aplicacao-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">
+            <i class="fa-solid fa-bullhorn w-7 text-lg group-hover:scale-110 transition-transform"></i>
+            <span class="text-sm">Aplicar DDS</span>
+          </router-link>
+          <router-link to="/historico-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+            <i class="fa-solid fa-clock-rotate-left w-7 text-lg group-hover:scale-110 transition-transform"></i>
+            <span class="text-sm">Histórico e Auditoria</span>
+          </router-link>
+          <router-link to="/acompanhamento" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+            <i class="fa-solid fa-clipboard-user w-7 text-lg group-hover:scale-110 transition-transform"></i>
+            <span class="text-sm">Diário de Bordo</span>
+          </router-link>
         </div>
       </nav>
 
@@ -91,6 +113,7 @@
               <component :is="Component" />
             </transition>
           </router-view>
+
         </div>
       </div>
 

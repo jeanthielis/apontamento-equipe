@@ -22,6 +22,12 @@ const routes = [
         meta: { allowedRoles: ['gerente', 'supervisor', 'lider'] }
       },
       {
+        path: 'funcionarios',
+        name: 'Funcionarios',
+        component: () => import('../views/Funcionarios.vue'),
+        meta: { allowedRoles: ['gerente', 'supervisor'] }
+      },
+      {
         path: 'unidades',
         name: 'Unidades',
         component: () => import('../views/Unidades.vue'),
@@ -32,7 +38,30 @@ const routes = [
         name: 'Admin',
         component: () => import('../views/Admin.vue'),
         meta: { allowedRoles: ['gerente', 'supervisor'] }
-      }
+      },
+      {
+        path: 'aplicacao-dds',
+        name: 'Aplicação DDS',
+        component: () => import('../views/AplicacaoDDS.vue'),
+        meta: { allowedRoles: ['gerente', 'supervisor', 'lider'] } // Atenção: O líder precisa acessar!
+      },
+      {
+        path: 'historico-dds',
+        name: 'Histórico DDS',
+        component: () => import('../views/HistoricoDDS.vue'),
+        meta: { allowedRoles: ['gerente', 'supervisor'] } // Apenas a gestão visualiza a auditoria
+      },
+      {
+        path: 'acompanhamento',
+        name: 'Acompanhamento Diário',
+        component: () => import('../views/AcompanhamentoDiario.vue'),
+        meta: { allowedRoles: ['gerente', 'supervisor', 'lider'] }
+      },
+      { path: 'biblioteca-dds',
+        name: 'Biblioteca DDS',
+        component: () => import('../views/BibliotecaDDS.vue'),
+        meta: { allowedRoles: ['gerente', 'supervisor'] }
+      },
     ]
   }
 ]
