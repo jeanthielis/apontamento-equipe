@@ -64,7 +64,6 @@
       </h3>
 
       <div v-for="func in listaAtual" :key="func.id" class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200">
-        
         <div class="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
           <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
             {{ func.nome.charAt(0) }}
@@ -77,7 +76,6 @@
 
         <div class="space-y-6">
           <div v-for="quesito in quesitos" :key="quesito.id" class="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-            
             <p class="text-sm font-bold text-slate-700 mb-3">{{ quesito.titulo }}</p>
             
             <div class="flex gap-2 mb-3">
@@ -97,7 +95,6 @@
             <div v-if="avaliacoes[func.id][quesito.id].status === 'CP' || avaliacoes[func.id][quesito.id].status === 'NC'" class="animate-fade-in mt-2">
               <textarea v-model="avaliacoes[func.id][quesito.id].justificativa" rows="2" placeholder="Obrigatório: Digite o motivo desta avaliação..." required class="w-full px-3 py-2.5 rounded-lg border text-sm outline-none transition-colors resize-none" :class="avaliacoes[func.id][quesito.id].status === 'CP' ? 'bg-amber-50/50 border-amber-200 focus:ring-2 focus:ring-amber-500 placeholder-amber-300' : 'bg-rose-50/50 border-rose-200 focus:ring-2 focus:ring-rose-500 placeholder-rose-300'"></textarea>
             </div>
-
           </div>
         </div>
       </div>
@@ -115,48 +112,32 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../lib/supabase'
+// IMPORTAÇÃO DOS ALERTAS MÁGICOS AQUI:
+import { toast, alerta } from '../lib/alerts' 
 
 const listasSalvas = ref([])
 const listaAtual = ref([])
 const quesitos = ref([])
-const avaliacoes = ref({}) // Estrutura: { funcionario_id: { quesito_id: { status: 'C', justificativa: '' } } }
+const avaliacoes = ref({}) 
 
 const buscaMatricula = ref('')
 const listaSelecionada = ref('')
 const salvando = ref(false)
 
 const dataDeHoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
+
 const fetchData = async () => {
-  // 1. BUSCA REAL: Puxando os itens que VOCÊ configurou na outra tela
-  const { data: q, error } = await supabase
-    .from('itens_checklist')
-    .select('id, descricao') // Usando o nome real da sua coluna
-    // .eq('ativo', true) // Ative esta linha se você tiver uma coluna 'ativo' na sua tabela
-    .order('descricao');
+  const { data: q } = await supabase.from('itens_checklist').select('id, descricao').order('descricao')
+  if (q) quesitos.value = q.map(item => ({ id: item.id, titulo: item.descricao }))
 
-  if (q) {
-    // Mapeamos 'descricao' para 'titulo' para não precisar mexer no restante do código Vue
-    quesitos.value = q.map(item => ({
-      id: item.id,
-      titulo: item.descricao 
-    }));
-  }
+  const { data: ls } = await supabase.from('diario_listas').select('*').order('created_at', { ascending: false })
+  if (ls) listasSalvas.value = ls
+}
 
-  // 2. Busca as listas de equipes salvas
-  const { data: ls } = await supabase
-    .from('diario_listas')
-    .select('*')
-    .order('created_at', { ascending: false });
-    
-  if (ls) listasSalvas.value = ls;
-};
-
-// Inicializa a matriz de respostas sempre que alguém entra na lista
 const inicializarAvaliacao = (funcId) => {
   if (!avaliacoes.value[funcId]) {
     avaliacoes.value[funcId] = {}
     quesitos.value.forEach(q => {
-      // Por padrão, a fábrica ganha tempo assumindo que está tudo Conforme (C)
       avaliacoes.value[funcId][q.id] = { status: 'C', justificativa: '' }
     })
   }
@@ -167,7 +148,8 @@ const adicionarPorMatricula = async () => {
   const matriculaLimpa = buscaMatricula.value.trim()
   
   if (listaAtual.value.some(f => f.matricula === matriculaLimpa)) {
-    alert("Colaborador já está na lista.")
+    // AVISO BONITO DE MATRÍCULA DUPLICADA
+    toast.fire({ icon: 'info', title: 'Colaborador já está na lista atual.' })
     buscaMatricula.value = ''
     return
   }
@@ -179,7 +161,8 @@ const adicionarPorMatricula = async () => {
     inicializarAvaliacao(func.id)
     buscaMatricula.value = ''
   } else {
-    alert(`Matrícula ${matriculaLimpa} não encontrada!`)
+    // ERRO BONITO DE MATRÍCULA
+    toast.fire({ icon: 'error', title: 'Matrícula não encontrada!' })
   }
 }
 
@@ -190,29 +173,40 @@ const removerDaLista = (id) => {
 
 const definirStatus = (funcId, quesitoId, status) => {
   avaliacoes.value[funcId][quesitoId].status = status
-  // Limpa a justificativa se voltar para 'C'
   if (status === 'C') avaliacoes.value[funcId][quesitoId].justificativa = ''
 }
 
 const salvarListaAtual = async () => {
-  const nome = prompt("Nome da Equipe/Lista (Ex: Turma C - Forno):")
-  if (!nome) return
+  // SUBSTITUIÇÃO DO PROMPT FEIO PELO SWEETALERT
+  const { value: nomeDaLista } = await alerta.fire({
+    title: 'Salvar Equipe',
+    input: 'text',
+    inputLabel: 'Dê um nome para esta lista (Ex: Turma C - Forno)',
+    inputPlaceholder: 'Digite o nome aqui...',
+    showCancelButton: true,
+    confirmButtonText: 'Salvar Lista',
+    cancelButtonText: 'Cancelar'
+  })
+
+  if (!nomeDaLista) return
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: novaLista, error: err1 } = await supabase.from('diario_listas').insert([{ nome, criado_por: user.id }]).select().single()
+  const { data: novaLista, error: err1 } = await supabase.from('diario_listas').insert([{ nome: nomeDaLista, criado_por: user.id }]).select().single()
 
-  if (err1) { alert("Erro ao salvar lista"); return; }
+  if (err1) { 
+    toast.fire({ icon: 'error', title: 'Erro ao salvar a lista.' })
+    return 
+  }
 
   const membros = listaAtual.value.map(f => ({ lista_id: novaLista.id, funcionario_id: f.id }))
   await supabase.from('diario_membros').insert(membros)
 
-  alert("Lista salva para uso futuro!")
+  toast.fire({ icon: 'success', title: 'Lista salva para uso futuro!' })
   await fetchData()
 }
 
 const carregarLista = async () => {
   if (!listaSelecionada.value) return
-  
   const { data } = await supabase.from('diario_membros').select('funcionarios(id, nome, matricula, funcao)').eq('lista_id', listaSelecionada.value)
 
   if (data) {
@@ -227,7 +221,12 @@ const salvarAvaliacoes = async () => {
     for (const q of quesitos.value) {
       const resp = avaliacoes.value[func.id][q.id]
       if ((resp.status === 'CP' || resp.status === 'NC') && !resp.justificativa.trim()) {
-        alert(`Você precisa justificar a avaliação de ${func.nome} no quesito: "${q.titulo}"`)
+        // ALERTA DE VALIDAÇÃO
+        alerta.fire({
+          icon: 'warning',
+          title: 'Justificativa Obrigatória',
+          html: `Você marcou <b>${resp.status}</b> para o colaborador <b>${func.nome}</b> no quesito:<br><i>"${q.titulo}"</i>.<br><br>Por favor, escreva a justificativa.`
+        })
         return
       }
     }
@@ -237,11 +236,9 @@ const salvarAvaliacoes = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
 
-    // 1. Cria o registro principal da Execução do dia
     const { data: execucao, error: errExec } = await supabase.from('diario_execucoes').insert([{ registrado_por: user.id }]).select().single()
     if (errExec) throw errExec
 
-    // 2. Monta o array gigante com todas as respostas (Avaliações)
     const payload = []
     listaAtual.value.forEach(func => {
       quesitos.value.forEach(q => {
@@ -256,19 +253,18 @@ const salvarAvaliacoes = async () => {
       })
     })
 
-    // 3. Salva tudo de uma vez
     const { error: errAva } = await supabase.from('diario_avaliacoes').insert(payload)
     if (errAva) throw errAva
 
-    alert("✅ Diário de Bordo registrado com sucesso!")
+    // SUCESSO!
+    toast.fire({ icon: 'success', title: 'Auditoria registrada com sucesso!' })
     
-    // Reseta a tela
     listaAtual.value = []
     avaliacoes.value = {}
     listaSelecionada.value = ''
 
   } catch (error) {
-    alert("Erro ao salvar: " + error.message)
+    toast.fire({ icon: 'error', title: 'Erro ao salvar', text: error.message })
     console.error(error)
   } finally {
     salvando.value = false

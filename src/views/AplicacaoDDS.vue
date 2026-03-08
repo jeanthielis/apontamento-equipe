@@ -115,15 +115,16 @@
 
   </div>
 </template>
-
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { supabase } from '../lib/supabase'
+// 1. IMPORTAÇÃO DOS ALERTAS MÁGICOS
+import { toast, alerta } from '../lib/alerts' 
 
 const temas = ref([])
 const listasSalvas = ref([])
 const listaAtual = ref([])
-const assinaturas = ref({}) // Objeto: { funcionario_id: "imagem_base64" }
+const assinaturas = ref({}) 
 
 const buscaMatricula = ref('')
 const listaSelecionada = ref('')
@@ -158,9 +159,9 @@ const adicionarPorMatricula = async () => {
   
   const matriculaLimpa = buscaMatricula.value.trim()
   
-  // Verifica se já está na lista
   if (listaAtual.value.some(f => f.matricula === matriculaLimpa)) {
-    alert("Este colaborador já está na lista atual.")
+    // 2. SUBSTITUINDO O ALERT ANTIGO
+    toast.fire({ icon: 'info', title: 'Atenção', text: 'Este colaborador já está na lista atual.' })
     buscaMatricula.value = ''
     return
   }
@@ -175,36 +176,48 @@ const adicionarPorMatricula = async () => {
     listaAtual.value.push(func)
     buscaMatricula.value = ''
   } else {
-    alert(`Matrícula ${matriculaLimpa} não encontrada!`)
+    // 3. ERRO DE MATRÍCULA BONITO
+    toast.fire({ icon: 'error', title: 'Não encontrado!', text: `A matrícula ${matriculaLimpa} não existe ou está inativa.` })
   }
 }
 
 const removerDaLista = (id) => {
   listaAtual.value = listaAtual.value.filter(f => f.id !== id)
-  // Remove a assinatura se ele já tivesse assinado e foi retirado
   if(assinaturas.value[id]) delete assinaturas.value[id]
 }
 
 const salvarListaAtual = async () => {
-  const nome = prompt("Dê um nome para esta lista (Ex: Turma A - Manhã):")
+  // 4. SUBSTITUINDO O PROMPT FEIO PELO SWEETALERT
+  const { value: nome } = await alerta.fire({
+    title: 'Salvar Lista de Presença',
+    input: 'text',
+    inputLabel: 'Dê um nome para esta lista (Ex: Turma A - Manhã)',
+    inputPlaceholder: 'Digite o nome...',
+    showCancelButton: true,
+    confirmButtonText: 'Salvar',
+    cancelButtonText: 'Cancelar'
+  })
+
   if (!nome) return
 
   const { data: { user } } = await supabase.auth.getUser()
   
-  // 1. Salva o cabeçalho da lista
   const { data: novaLista, error: err1 } = await supabase
     .from('dds_listas')
     .insert([{ nome, criado_por: user.id }])
     .select().single()
 
-  if(err1) { alert("Erro ao salvar lista"); return; }
+  if(err1) { 
+    toast.fire({ icon: 'error', title: 'Erro ao salvar a lista base.' })
+    return 
+  }
 
-  // 2. Salva os membros
   const membros = listaAtual.value.map(f => ({ lista_id: novaLista.id, funcionario_id: f.id }))
   await supabase.from('dds_listas_membros').insert(membros)
 
-  alert("Lista salva com sucesso!")
-  await fetchData() // Recarrega o select
+  // 5. SUCESSO AO SALVAR LISTA
+  toast.fire({ icon: 'success', title: 'Lista salva com sucesso!' })
+  await fetchData() 
 }
 
 const carregarLista = async () => {
@@ -220,7 +233,7 @@ const carregarLista = async () => {
 
   if (data) {
     listaAtual.value = data.map(item => item.funcionarios)
-    assinaturas.value = {} // Reseta as assinaturas para a nova lista
+    assinaturas.value = {} 
   }
 }
 
@@ -228,31 +241,28 @@ const carregarLista = async () => {
 const configurarCanvas = () => {
   if(!canvasRef.value) return
   const canvas = canvasRef.value
-  // Ajusta resolução para telas de alta densidade (celulares)
   const rect = canvas.getBoundingClientRect()
   canvas.width = rect.width
   canvas.height = rect.height
   ctx = canvas.getContext('2d')
   ctx.lineWidth = 3
   ctx.lineCap = 'round'
-  ctx.strokeStyle = '#0f172a' // Cor da caneta (slate-900)
+  ctx.strokeStyle = '#0f172a' 
 }
 
 const abrirLousa = async (func) => {
   modal.value = { aberto: true, funcionario: func }
-  await nextTick() // Aguarda o Vue renderizar o HTML do modal
+  await nextTick() 
   configurarCanvas()
 }
 
 const fecharLousa = () => { modal.value.aberto = false }
 const limparLousa = () => { ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height) }
 
-// Eventos do Mouse (PC)
 const iniciarTraco = (e) => { desenhando = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY) }
 const desenharTraco = (e) => { if (desenhando) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke() } }
 const pararTraco = () => { desenhando = false }
 
-// Eventos de Toque (Celular)
 const getTouchPos = (e) => {
   const rect = canvasRef.value.getBoundingClientRect()
   return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }
@@ -261,7 +271,6 @@ const iniciarTracoMobile = (e) => { e.preventDefault(); desenhando = true; ctx.b
 const desenharTracoMobile = (e) => { e.preventDefault(); if (desenhando) { const pos = getTouchPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke() } }
 
 const confirmarAssinatura = () => {
-  // Pega a imagem gerada no canvas convertida para String Base64
   const imagemBase64 = canvasRef.value.toDataURL("image/png")
   assinaturas.value[modal.value.funcionario.id] = imagemBase64
   fecharLousa()
@@ -273,7 +282,6 @@ const salvarDDS = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
 
-    // 1. Salva a aplicação
     const { data: aplicacao, error: erroApp } = await supabase
       .from('dds_aplicacoes')
       .insert([{
@@ -284,26 +292,26 @@ const salvarDDS = async () => {
 
     if (erroApp) throw erroApp
 
-    // 2. Monta e salva as assinaturas (agora incluindo a imagem!)
     const assinaturasParaSalvar = listaAtual.value.map(func => ({
       aplicacao_id: aplicacao.id,
       funcionario_id: func.id,
-      imagem_assinatura: assinaturas.value[func.id] // A imagem capturada da lousa
+      imagem_assinatura: assinaturas.value[func.id] 
     }))
 
     const { error: erroAssin } = await supabase.from('dds_assinaturas').insert(assinaturasParaSalvar)
     if (erroAssin) throw erroAssin
 
-    alert('✅ DDS registrado e assinaturas armazenadas com sucesso!')
+    // 6. SUCESSO FINAL AO ASSINAR O DDS
+    toast.fire({ icon: 'success', title: 'DDS Registrado!', text: 'Assinaturas salvas no sistema.' })
     
-    // Reset da tela
     form.value.tema_id = ''
     listaAtual.value = []
     assinaturas.value = {}
     listaSelecionada.value = ''
 
   } catch (error) {
-    alert("Erro ao salvar: " + error.message)
+    // 7. ERRO GERAL
+    toast.fire({ icon: 'error', title: 'Erro ao salvar', text: error.message })
   } finally {
     loading.value = false
   }

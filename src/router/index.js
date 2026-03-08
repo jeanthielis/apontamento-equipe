@@ -57,6 +57,12 @@ const routes = [
         component: () => import('../views/AcompanhamentoDiario.vue'),
         meta: { allowedRoles: ['gerente', 'supervisor', 'lider'] }
       },
+      {
+        path: 'admin',
+        name: 'Gestão de Acessos',
+        component: () => import('../views/GestaoAcesso.vue'),
+        // Depois vamos colocar a trava de segurança aqui, por enquanto deixamos livre para você testar
+      },
       { path: 'biblioteca-dds',
         name: 'Biblioteca DDS',
         component: () => import('../views/BibliotecaDDS.vue'),

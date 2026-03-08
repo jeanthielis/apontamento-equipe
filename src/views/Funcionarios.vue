@@ -110,6 +110,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../lib/supabase'
+// 1. IMPORTAÇÃO DOS ALERTAS AQUI
+import { toast, alerta, traduzirErro } from '../lib/alerts'
 
 const funcionarios = ref([])
 const equipesComUnidade = ref([])
@@ -123,11 +125,9 @@ const novo = ref({
 })
 
 const fetchData = async () => {
-  // Busca funcionários
   const { data: f } = await supabase.from('funcionarios').select('*').order('nome')
   if (f) funcionarios.value = f
 
-  // Busca equipes fazendo um "join" com unidades para pegar o nome da unidade pai
   const { data: eq } = await supabase.from('equipes').select(`
     id, nome, unidade_id,
     unidades (nome)
@@ -145,36 +145,58 @@ const salvarFuncionario = async () => {
   if (!novo.value.nome || !novo.value.equipe_id) return
   loading.value = true
 
-  // 1. "Limpando" os dados antes de mandar pro banco para evitar o Erro 400
   const dadosParaSalvar = {
     nome: novo.value.nome,
     equipe_id: novo.value.equipe_id,
     matricula: novo.value.matricula ? novo.value.matricula : null,
-    // Aqui está a mágica: mandamos o texto para a coluna "funcao" e também para "cargo" (por garantia)
     funcao: novo.value.cargo ? novo.value.cargo : 'Operador',
     cargo: novo.value.cargo ? novo.value.cargo : 'Operador'
   }
 
-  // 2. Tenta inserir
   const { error } = await supabase.from('funcionarios').insert([dadosParaSalvar])
   
   if (!error) {
-    // Sucesso! Limpa o formulário e recarrega a tabela
+    // 2. TOAST DE SUCESSO AQUI
+    toast.fire({ icon: 'success', title: 'Operador cadastrado com sucesso!' })
     novo.value = { nome: '', matricula: '', cargo: 'Operador', equipe_id: '' }
     await fetchData()
   } else {
-    // Se falhar, vamos ver exatamente O QUE o banco recusou
-    console.error("Erro detalhado do Supabase:", error)
-    alert(`O banco de dados recusou o cadastro.\nMotivo: ${error.message}\n(Aperte F12 e veja o Console para mais detalhes)`)
+    
+    console.error("Erro original:", error)
+    // Usando o nosso tradutor mágico!
+    toast.fire({ icon: 'error', title: 'Erro ao cadastrar', text: traduzirErro(error) })
+  
   }
   
   loading.value = false
 }
 
-// Em vez de deletar, nós desativamos para manter o histórico em relatórios antigos
 const toggleStatus = async (func) => {
-  await supabase.from('funcionarios').update({ ativo: !func.ativo }).eq('id', func.id)
-  await fetchData()
+  // 4. ALERTA CENTRAL PARA CONFIRMAR AÇÃO (EVITA CLIQUES ACIDENTAIS)
+  const acao = func.ativo ? 'Desativar' : 'Reativar'
+  
+  const confirmacao = await alerta.fire({
+    title: `${acao} colaborador?`,
+    html: `Deseja realmente ${acao.toLowerCase()} <b>${func.nome}</b>?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: func.ativo ? '#e11d48' : '#10b981', // Vermelho para desativar, verde para reativar
+    cancelButtonColor: '#94a3b8',
+    confirmButtonText: `Sim, ${acao.toLowerCase()}`,
+    cancelButtonText: 'Cancelar'
+  })
+
+  // Se o usuário clicou em 'Sim'
+  if (confirmacao.isConfirmed) {
+    const { error } = await supabase.from('funcionarios').update({ ativo: !func.ativo }).eq('id', func.id)
+    
+    if (!error) {
+      toast.fire({ icon: 'success', title: `Status atualizado com sucesso!` })
+      await fetchData()
+    } else {
+      toast.fire({ icon: 'error', title: 'Erro ao atualizar', text: error.message })
+    }
+  }
 }
 
 onMounted(fetchData)

@@ -17,6 +17,8 @@
 
       <nav class="flex-1 overflow-y-auto py-4 px-4 space-y-2">
         <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 mt-2">Menu Principal</p>
+
+       
         
         <router-link to="/dashboard" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
           <i class="fa-solid fa-border-all w-7 text-lg group-hover:scale-110 transition-transform"></i>
@@ -57,6 +59,18 @@
             <i class="fa-solid fa-clipboard-user w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Diário de Bordo</span>
           </router-link>
+
+           <div class="mt-8 mb-4 px-4">
+            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Administração</h4>
+          </div>
+
+          <router-link to="/admin" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-rose-500/10 text-rose-400 font-semibold border border-rose-500/20">
+            <div class="w-8 flex justify-center mr-2">
+              <i class="fa-solid fa-user-shield text-lg group-hover:scale-110 transition-transform"></i>
+            </div>
+            <span class="text-sm">Controle de Acesso</span>
+          </router-link>
+
         </div>
       </nav>
 

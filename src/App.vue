@@ -29,3 +29,4 @@ onMounted(() => {
   
   <router-view v-else />
 </template>
+
