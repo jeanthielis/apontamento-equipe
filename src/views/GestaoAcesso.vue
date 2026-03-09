@@ -13,11 +13,16 @@
     </div>
 
     <div v-if="abaAtiva === 'usuarios'" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+      
+      <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
         <div>
           <h3 class="font-bold text-slate-800">Equipe Autenticada</h3>
           <p class="text-[11px] text-slate-500 mt-0.5">Clique na etiqueta para definir ou alterar o nível de acesso do colaborador.</p>
         </div>
+        
+        <button @click="criarNovoUsuario" class="w-full sm:w-auto bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all flex items-center justify-center">
+          <i class="fa-solid fa-user-plus mr-2"></i> Cadastrar Usuário
+        </button>
       </div>
       
       <div class="overflow-x-auto">
@@ -31,6 +36,9 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50">
+            <tr v-if="usuarios.length === 0">
+              <td colspan="4" class="p-8 text-center text-slate-500">Nenhum usuário encontrado.</td>
+            </tr>
             <tr v-for="u in usuarios" :key="u.id" class="text-sm hover:bg-slate-50/50 transition-colors">
               <td class="p-4 font-bold text-slate-700 flex items-center gap-3">
                 <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">{{ u.nome?.charAt(0) || 'U' }}</div>
@@ -103,7 +111,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { supabase } from '../lib/supabase'
+import { supabase, supabaseCadastro } from '../lib/supabase'
 import { toast, alerta, traduzirErro } from '../lib/alerts'
 
 const abaAtiva = ref('usuarios')
@@ -112,6 +120,7 @@ const niveis = ref([])
 const nivelSelecionado = ref(null)
 const permissoesNivel = ref([])
 
+// Lista de módulos do sistema
 const modulosSistema = [
   { nome: 'Dashboard Gerencial', slug: 'home', icone: 'fa-solid fa-chart-line' },
   { nome: 'Aplicar DDS', slug: 'dds_aplicar', icone: 'fa-solid fa-bullhorn' },
@@ -131,10 +140,78 @@ const fetchData = async () => {
   niveis.value = nvs || []
 }
 
-// ==== GESTÃO DE USUÁRIOS (A MÁGICA ACONTECE AQUI) ====
+// ==== CRIAR USUÁRIO PELO SUPER ADMIN (COM O CLIENTE FANTASMA) ====
+const criarNovoUsuario = async () => {
+  const { value: form } = await alerta.fire({
+    title: 'Cadastrar Novo Acesso',
+    html: `
+      <div class="space-y-3 mt-4 text-left">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Nome Completo</label>
+          <input id="swal-nome" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Ex: João da Silva">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Usuário de Acesso (Login)</label>
+          <input id="swal-usuario" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Ex: joao.silva">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Senha Temporária</label>
+          <input id="swal-senha" type="text" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Mínimo de 6 caracteres">
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: '#4f46e5',
+    cancelButtonColor: '#94a3b8',
+    confirmButtonText: 'Criar Conta',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      // PEGANDO OS ELEMENTOS COM OS IDs CORRETOS
+      const elNome = document.getElementById('swal-nome')
+      const elUsuario = document.getElementById('swal-usuario')
+      const elSenha = document.getElementById('swal-senha')
 
+      if (!elNome.value || !elUsuario.value || !elSenha.value) {
+        alerta.showValidationMessage('Por favor, preencha todos os campos.')
+        return false
+      }
+
+      // MÁGICA DO LOGIN: Criamos um e-mail interno para o Supabase aceitar
+      const loginFormatado = `${elUsuario.value.trim().toLowerCase()}@safetrack.com.br`
+
+      return { 
+        nome: elNome.value, 
+        email: loginFormatado, 
+        senha: elSenha.value 
+      }
+    }
+  })
+
+  if (form) {
+    alerta.fire({
+      title: 'Criando conta...',
+      allowOutsideClick: false,
+      didOpen: () => { alerta.showLoading() }
+    })
+
+    const { data, error } = await supabaseCadastro.auth.signUp({
+      email: form.email,
+      password: form.senha,
+      options: { data: { nome: form.nome } } 
+    })
+
+    if (error) {
+      console.error('Erro ao criar usuário:', error)
+      toast.fire({ icon: 'error', title: 'Erro ao cadastrar', text: traduzirErro(error) })
+    } else {
+      toast.fire({ icon: 'success', title: 'Usuário cadastrado!', text: `O login é: ${form.email.split('@')[0]}` })
+      await fetchData() 
+    }
+  }
+}
+
+// ==== GESTÃO DE USUÁRIOS ====
 const alterarNivelUsuario = async (usuario) => {
-  // Transforma nosso array de níveis em um objeto pro SweetAlert ler
   const opcoesDeNivel = { "": "Remover Acesso (Sem Nível)" }
   niveis.value.forEach(n => { opcoesDeNivel[n.id] = n.nome })
 
@@ -143,16 +220,14 @@ const alterarNivelUsuario = async (usuario) => {
     html: `Qual será o cargo de permissão de <b>${usuario.nome}</b>?`,
     input: 'select',
     inputOptions: opcoesDeNivel,
-    inputValue: usuario.nivel_id || "", // Já vem pré-selecionado o atual
+    inputValue: usuario.nivel_id || "", 
     showCancelButton: true,
     confirmButtonText: 'Salvar Acesso',
     cancelButtonText: 'Cancelar'
   })
 
-  // Se ele confirmou a tela do SweetAlert
   if (isConfirmed) {
     const idParaSalvar = nivelEscolhido === "" ? null : nivelEscolhido
-    
     const { error } = await supabase.from('usuarios').update({ nivel_id: idParaSalvar }).eq('id', usuario.id)
     
     if (!error) {
@@ -177,7 +252,6 @@ const excluirUsuario = async (usuario) => {
   })
 
   if (confirmacao.isConfirmed) {
-    // Apaga os dados públicos do usuário
     const { error } = await supabase.from('usuarios').delete().eq('id', usuario.id)
     if (!error) {
       toast.fire({ icon: 'success', title: 'Usuário removido!' })
@@ -188,9 +262,7 @@ const excluirUsuario = async (usuario) => {
   }
 }
 
-
 // ==== GESTÃO DE NÍVEIS E PERMISSÕES ====
-
 const selecionarNivel = async (nivel) => {
   nivelSelecionado.value = nivel
   const { data: perms } = await supabase.from('permissoes_acesso').select('modulo_slug').eq('nivel_id', nivel.id)

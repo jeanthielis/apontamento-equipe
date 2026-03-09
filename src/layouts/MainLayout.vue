@@ -17,54 +17,55 @@
 
       <nav class="flex-1 overflow-y-auto py-4 px-4 space-y-2">
         <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 mt-2">Menu Principal</p>
-
-       
         
-        <router-link to="/dashboard" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+        <router-link v-if="temPermissao('home')" to="/dashboard" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
           <i class="fa-solid fa-border-all w-7 text-lg group-hover:scale-110 transition-transform"></i>
           <span class="text-sm">Painel Operacional</span>
         </router-link>
 
-        <div v-if="isAdmin">
+        <div v-if="mostrarMenuGestao">
           <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 mt-8">Gestão & Setup</p>
           
-          <router-link to="/admin" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+          <router-link v-if="temPermissao('admin')" to="/admin" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
             <i class="fa-solid fa-sliders w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Configurações</span>
           </router-link>
           
-          <router-link to="/unidades" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+          <router-link v-if="temPermissao('admin')" to="/unidades" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
             <i class="fa-solid fa-users-gear w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Estrutura e Liderança</span>
-        </router-link>
+          </router-link>
 
-          <router-link to="/funcionarios" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+          <router-link v-if="temPermissao('funcionarios')" to="/funcionarios" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
             <i class="fa-solid fa-address-card w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Efetivo & Operadores</span>
           </router-link>
 
-          <router-link to="/biblioteca-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+          <router-link v-if="temPermissao('dds_temas')" to="/biblioteca-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
             <i class="fa-solid fa-book-medical w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Biblioteca de DDS</span>
           </router-link>
-          <router-link to="/aplicacao-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">
+
+          <router-link v-if="temPermissao('dds_aplicar')" to="/aplicacao-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">
             <i class="fa-solid fa-bullhorn w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Aplicar DDS</span>
           </router-link>
-          <router-link to="/historico-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+
+          <router-link v-if="temPermissao('dds_historico')" to="/historico-dds" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
             <i class="fa-solid fa-clock-rotate-left w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Histórico e Auditoria</span>
           </router-link>
-          <router-link to="/acompanhamento" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+
+          <router-link v-if="temPermissao('diario_bordo')" to="/acompanhamento" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
             <i class="fa-solid fa-clipboard-user w-7 text-lg group-hover:scale-110 transition-transform"></i>
             <span class="text-sm">Diário de Bordo</span>
           </router-link>
 
-           <div class="mt-8 mb-4 px-4">
+          <div v-if="temPermissao('admin')" class="mt-8 mb-4 px-4">
             <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Administração</h4>
           </div>
 
-          <router-link to="/admin" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-rose-500/10 text-rose-400 font-semibold border border-rose-500/20">
+          <router-link v-if="temPermissao('admin')" to="/adminSuper" class="flex items-center px-4 py-3 text-slate-300 rounded-2xl hover:bg-white/10 hover:text-white transition-all group" active-class="bg-rose-500/10 text-rose-400 font-semibold border border-rose-500/20">
             <div class="w-8 flex justify-center mr-2">
               <i class="fa-solid fa-user-shield text-lg group-hover:scale-110 transition-transform"></i>
             </div>
@@ -81,7 +82,7 @@
           </div>
           <div class="ml-3 truncate">
             <p class="text-sm font-bold text-slate-200 truncate">{{ authStore.profile?.nome?.split(' ')[0] }}</p>
-            <p class="text-[10px] text-slate-400 uppercase tracking-wider">{{ authStore.profile?.role }}</p>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider">{{ authStore.profile?.cargoNome || 'Sem Cargo' }}</p>
           </div>
         </div>
         <button @click="handleLogout" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-rose-400 transition-all" title="Sair">
@@ -91,7 +92,6 @@
     </aside>
 
     <main class="flex-1 flex flex-col h-screen relative overflow-hidden">
-      
       <header class="h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-6 sm:px-10 z-10 sticky top-0">
         
         <div class="md:hidden flex items-center">
@@ -127,7 +127,6 @@
               <component :is="Component" />
             </transition>
           </router-view>
-
         </div>
       </div>
 
@@ -143,8 +142,20 @@ import { useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const router = useRouter()
 
-const isAdmin = computed(() => {
-  return ['gerente', 'supervisor'].includes(authStore.profile?.role)
+// 1. Função inteligente que verifica a lista de permissões que já está no authStore
+const temPermissao = (slug) => {
+  // Se você for SuperAdmin, vê tudo por padrão (opcional, mas recomendado)
+  if (authStore.profile?.cargoNome === 'SuperAdmin') return true
+  
+  // Senão, checa se a permissão do botão está na lista do usuário
+  return authStore.profile?.permissoes?.includes(slug) || false
+}
+
+// 2. Controla se o bloco "Gestão & Setup" aparece (só se ele tiver alguma dessas permissões)
+const mostrarMenuGestao = computed(() => {
+  if (authStore.profile?.cargoNome === 'SuperAdmin') return true
+  const permissoesGestao = ['admin', 'funcionarios', 'dds_temas', 'dds_aplicar', 'dds_historico', 'diario_bordo']
+  return permissoesGestao.some(p => authStore.profile?.permissoes?.includes(p))
 })
 
 const handleLogout = async () => {

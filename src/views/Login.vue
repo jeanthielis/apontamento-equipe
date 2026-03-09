@@ -26,7 +26,7 @@
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fa-solid fa-envelope text-slate-400"></i>
               </div>
-              <input id="email" v-model="email" name="email" type="email" autocomplete="email" required 
+              <input id="email" v-model="email" name="email" type="input" autocomplete="email" required 
                 class="appearance-none rounded-xl relative block w-full px-3 py-3 pl-10 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm transition-colors" 
                 placeholder="nome@fabrica.com.br"
                 :disabled="loading" />
@@ -59,12 +59,17 @@
 
         <div>
           <button type="submit" :disabled="loading" 
-            class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-all disabled:opacity-70 disabled:cursor-not-allowed">
+            class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-all disabled:opacity-70 disabled:cursor-not-allowed mb-4">
             <span v-if="loading" class="absolute left-0 inset-y-0 flex items-center pl-3">
               <i class="fa-solid fa-circle-notch fa-spin text-emerald-500"></i>
             </span>
             {{ loading ? 'Autenticando...' : 'Entrar no Sistema' }}
           </button>
+          
+          <p class="mt-4 text-center text-sm text-slate-500">
+            Ainda não tem acesso? 
+            <router-link to="/cadastro" class="font-bold text-indigo-600 hover:text-indigo-500 transition-colors">Crie sua conta</router-link>
+          </p>
         </div>
       </form>
 
@@ -88,28 +93,35 @@ const handleLogin = async () => {
   loading.value = true
   errorMessage.value = ''
 
+  // 1. Pegamos o que foi digitado, limpamos espaços e deixamos minúsculo
+  const loginDigitado = email.value.trim().toLowerCase()
+
+  // 2. Se não tiver '@', a gente coloca o nosso domínio padrão
+  const loginFinal = loginDigitado.includes('@') 
+    ? loginDigitado 
+    : `${loginDigitado}@safetrack.com.br`
+
+  console.log("Tentando logar como:", loginFinal) // Para você ver no F12 se está certo
+
   try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: loginFinal,
+      password: password.value, // Verifique se o nome da variável é password ou senha
     })
 
     if (error) {
-      // Tradução simples de erros comuns do Supabase para o usuário final
-      if (error.message.includes('Invalid login credentials')) {
-        errorMessage.value = 'E-mail ou senha incorretos. Tente novamente.'
-      } else {
-        errorMessage.value = 'Ocorreu um erro ao tentar acessar. Verifique sua conexão.'
-      }
+      // Se der erro, mostramos a mensagem traduzida
+      errorMessage.value = "Usuário ou senha incorretos."
+      console.error("Erro detalhado:", error.message)
     } else {
-      // Se der certo, o redirecionamento é feito lá no `router.beforeEach`
-      // Mas podemos forçar a ida pro Dashboard aqui por garantia:
-      router.push('/dashboard')
+      // Sucesso! Redireciona
+      router.push('/home')
     }
   } catch (err) {
-    errorMessage.value = 'Erro inesperado no sistema.'
+    errorMessage.value = "Erro ao conectar com o servidor."
   } finally {
     loading.value = false
   }
 }
+
 </script>

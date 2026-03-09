@@ -2,14 +2,26 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/auth'
 import MainLayout from '../layouts/MainLayout.vue'
+import HomeView from '../views/Home.vue' // ou o caminho onde você salvou o arquivo
 
 const routes = [
+  // 1. ROTA PÚBLICA: LOGIN
   {
     path: '/',
     name: 'Login',
     component: () => import('../views/Login.vue'),
     meta: { requiresAuth: false }
   },
+  
+  // 2. ROTA PÚBLICA: CADASTRO (Agora ela está livre aqui fora!)
+  {
+    path: '/cadastro',
+    name: 'Cadastro',
+    component: () => import('../views/Cadastro.vue'),
+    meta: { requiresAuth: false }
+  },
+
+  // 3. ÁREA RESTRITA (Requer Login)
   {
     path: '/',
     component: MainLayout,
@@ -39,17 +51,23 @@ const routes = [
         component: () => import('../views/Admin.vue'),
         meta: { allowedRoles: ['gerente', 'supervisor'] }
       },
+        {
+        path: '/home',
+        name: 'home',
+        component: HomeView,
+        // Se você usa o Sidebar como "pai", coloque o Home dentro dele
+      },
       {
         path: 'aplicacao-dds',
         name: 'Aplicação DDS',
         component: () => import('../views/AplicacaoDDS.vue'),
-        meta: { allowedRoles: ['gerente', 'supervisor', 'lider'] } // Atenção: O líder precisa acessar!
+        meta: { allowedRoles: ['gerente', 'supervisor', 'lider'] } 
       },
       {
         path: 'historico-dds',
         name: 'Histórico DDS',
         component: () => import('../views/HistoricoDDS.vue'),
-        meta: { allowedRoles: ['gerente', 'supervisor'] } // Apenas a gestão visualiza a auditoria
+        meta: { allowedRoles: ['gerente', 'supervisor'] } 
       },
       {
         path: 'acompanhamento',
@@ -58,16 +76,17 @@ const routes = [
         meta: { allowedRoles: ['gerente', 'supervisor', 'lider'] }
       },
       {
-        path: 'admin',
+        path: 'adminSuper',
         name: 'Gestão de Acessos',
         component: () => import('../views/GestaoAcesso.vue'),
-        // Depois vamos colocar a trava de segurança aqui, por enquanto deixamos livre para você testar
+        meta: { moduloSlug: 'admin' }
       },
-      { path: 'biblioteca-dds',
+      { 
+        path: 'biblioteca-dds',
         name: 'Biblioteca DDS',
         component: () => import('../views/BibliotecaDDS.vue'),
         meta: { allowedRoles: ['gerente', 'supervisor'] }
-      },
+      }
     ]
   }
 ]
@@ -77,7 +96,7 @@ const router = createRouter({
   routes
 })
 
-// Guardião de Rotas (Padrão Vue 3)
+// Guardião de Rotas
 router.beforeEach(async (to, from) => {
   const authStore = useAuthStore()
   const { data: { session } } = await supabase.auth.getSession()
@@ -88,8 +107,8 @@ router.beforeEach(async (to, from) => {
     return { name: 'Login' }
   }
 
-  // 2. Se logado, não deixa voltar pro Login
-  if (!requiresAuth && session && to.name === 'Login') {
+  // 2. Se logado, não deixa voltar pro Login nem pro Cadastro
+  if (!requiresAuth && session && (to.name === 'Login' || to.name === 'Cadastro')) {
     return { name: 'Dashboard' }
   }
 
